@@ -14,6 +14,7 @@ services:
       - postgres
       - redis
       - mailpit
+      - rabbitmq
     volumes:
       - ./analytics:/app:z
     env_file:
@@ -57,6 +58,7 @@ services:
       - redis
       - postgres
       - mailpit
+      - rabbitmq
     ports: []
     command: /start-celeryworker
 
@@ -78,3 +80,44 @@ services:
     ports:
       - '5555:5555'
     command: /start-flower
+
+  notifications:
+    build:
+      context: ./notifications
+      dockerfile: compose/local/Dockerfile
+    image: capslock_local_notifications
+    container_name: capslock_local_notifications
+    volumes:
+      - ./notifications:/app
+    env_file:
+      - ./notifications/.envs/.local/.notifications
+    ports:
+      - "8001:8000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    networks:
+      - capslock_network
+
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: capslock_local_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - capslock_network
+
+networks:
+  capslock_network:
+    driver: bridge
