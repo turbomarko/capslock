@@ -11,8 +11,7 @@ Usage:
 import json
 import random
 import datetime
-from decimal import Decimal
-from typing import List, Dict, Any
+from typing import Dict, Any
 
 # Configuration
 START_DATE = datetime.date(2024, 1, 1)
