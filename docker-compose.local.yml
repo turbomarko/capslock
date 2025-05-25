@@ -118,6 +118,21 @@ services:
     networks:
       - capslock_network
 
+  llm:
+    build:
+      context: ./llm
+      dockerfile: compose/local/Dockerfile
+    image: capslock_local_llm
+    container_name: capslock_local_llm
+    volumes:
+      - ./llm:/app
+    env_file:
+      - ./llm/.envs/.local/.llm
+    ports:
+      - "8002:8000"
+    networks:
+      - capslock_network
+
 networks:
   capslock_network:
     driver: bridge
