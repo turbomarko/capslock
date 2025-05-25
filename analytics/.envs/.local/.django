@@ -1,0 +1,19 @@
+# General
+# ------------------------------------------------------------------------------
+USE_DOCKER=yes
+IPYTHONDIR=/app/.ipython
+
+# HTTPS
+# ------------------------------------------------------------------------------
+VIRTUAL_HOST=my-dev-env.local
+VIRTUAL_PORT=8000
+# Redis
+# ------------------------------------------------------------------------------
+REDIS_URL=redis://redis:6379/0
+
+# Celery
+# ------------------------------------------------------------------------------
+
+# Flower
+CELERY_FLOWER_USER=VKmBNnrOfQwTXGTJRsaWbKhdqaXUJYXz
+CELERY_FLOWER_PASSWORD=5dd1fZCACfFYjL9rGwJeC2pTRTSbmxerJJFIf0GtdaLk6sNzCC60pTZLNF9PCHuu

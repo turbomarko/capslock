@@ -1,0 +1,80 @@
+volumes:
+  capslock_local_postgres_data: {}
+  capslock_local_postgres_data_backups: {}
+  capslock_local_redis_data: {}
+
+services:
+  analytics: &analytics
+    build:
+      context: ./analytics
+      dockerfile: ./compose/local/django/Dockerfile
+    image: capslock_local_analytics
+    container_name: capslock_local_analytics
+    depends_on:
+      - postgres
+      - redis
+      - mailpit
+    volumes:
+      - ./analytics:/app:z
+    env_file:
+      - ./analytics/.envs/.local/.django
+      - ./analytics/.envs/.local/.postgres
+    ports:
+      - '8000:8000'
+    command: /start
+
+  postgres:
+    build:
+      context: ./analytics
+      dockerfile: ./compose/local/postgres/Dockerfile
+    image: capslock_local_postgres
+    container_name: capslock_local_postgres
+    volumes:
+      - capslock_local_postgres_data:/var/lib/postgresql/data
+      - capslock_local_postgres_data_backups:/backups
+    env_file:
+      - ./analytics/.envs/.local/.postgres
+    ports:
+      - '5432:5432'
+
+  mailpit:
+    image: docker.io/axllent/mailpit:latest
+    container_name: capslock_local_mailpit
+    ports:
+      - '8025:8025'
+
+  redis:
+    image: docker.io/redis:6
+    container_name: capslock_local_redis
+    volumes:
+      - capslock_local_redis_data:/data
+
+  celeryworker:
+    <<: *analytics
+    image: capslock_local_celeryworker
+    container_name: capslock_local_celeryworker
+    depends_on:
+      - redis
+      - postgres
+      - mailpit
+    ports: []
+    command: /start-celeryworker
+
+  celerybeat:
+    <<: *analytics
+    image: capslock_local_celerybeat
+    container_name: capslock_local_celerybeat
+    depends_on:
+      - redis
+      - postgres
+      - mailpit
+    ports: []
+    command: /start-celerybeat
+
+  flower:
+    <<: *analytics
+    image: capslock_local_flower
+    container_name: capslock_local_flower
+    ports:
+      - '5555:5555'
+    command: /start-flower
