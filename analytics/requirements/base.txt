@@ -4,6 +4,8 @@ hiredis==3.1.1  # https://github.com/redis/hiredis-py
 celery==5.5.2  # pyup: < 6.0  # https://github.com/celery/celery
 django-celery-beat==2.8.1  # https://github.com/celery/django-celery-beat
 flower==2.0.1  # https://github.com/mher/flower
+httpx==0.27.0  # https://github.com/encode/httpx
+aio-pika==9.4.0  # https://github.com/mosquito/aio-pika
 
 # Django
 # ------------------------------------------------------------------------------

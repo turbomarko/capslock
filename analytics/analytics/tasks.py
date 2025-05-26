@@ -4,6 +4,10 @@ from django.db import transaction
 from analytics.models import Campaign, DailyMetric, AnalysisResult
 import statistics
 import logging
+import httpx
+import json
+import aio_pika
+from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -245,8 +249,14 @@ def _check_performance_thresholds(metrics, campaign):
 
 @transaction.atomic
 def _create_analysis_result(campaign, anomaly_data, analysis_date):
-    """Create and save analysis result to database"""
+    """Create and save analysis result to database with LLM recommendations and notifications"""
     try:
+        # Get LLM recommendations
+        llm_recommendations = _get_llm_recommendations(campaign, anomaly_data)
+        
+        # Combine original recommendations with LLM recommendations
+        all_recommendations = anomaly_data['recommendations'] + llm_recommendations
+        
         analysis_result = AnalysisResult.objects.create(
             analysis_type=anomaly_data['type'],
             campaign=campaign,
@@ -254,8 +264,11 @@ def _create_analysis_result(campaign, anomaly_data, analysis_date):
             severity=anomaly_data['severity'],
             metric_affected=anomaly_data['metric'],
             description=anomaly_data['description'],
-            recommendations=anomaly_data['recommendations']
+            recommendations=all_recommendations
         )
+        
+        # Send notification
+        _send_anomaly_notification(campaign, analysis_result)
         
         logger.info(f"Created analysis result: {analysis_result.id} for campaign {campaign.name}")
         return analysis_result
@@ -263,3 +276,89 @@ def _create_analysis_result(campaign, anomaly_data, analysis_date):
     except Exception as e:
         logger.error(f"Failed to create analysis result: {str(e)}")
         return None
+
+def _get_llm_recommendations(campaign: Campaign, anomaly_data: Dict[str, Any]) -> List[str]:
+    """Get additional recommendations from LLM service"""
+    try:
+        # Prepare the prompt for the LLM
+        prompt = f"""
+        Campaign: {campaign.name}
+        Platform: {campaign.platform}
+        Issue Type: {anomaly_data['type']}
+        Severity: {anomaly_data['severity']}
+        Metric Affected: {anomaly_data['metric']}
+        Description: {anomaly_data['description']}
+        
+        Based on this campaign anomaly, provide 2-3 specific, actionable recommendations 
+        for improving campaign performance. Focus on practical steps that can be taken 
+        immediately. Format each recommendation as a separate item.
+        """
+        
+        # Call LLM service
+        response = httpx.post(
+            "http://llm:8000/chat",
+            json={
+                "messages": [
+                    {"role": "system", "content": "You are a digital marketing expert providing campaign optimization advice."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.7
+            }
+        )
+        response.raise_for_status()
+        
+        # Parse and format recommendations
+        llm_response = response.json()
+        recommendations = [
+            rec.strip() for rec in llm_response['response'].split('\n')
+            if rec.strip() and not rec.strip().startswith(('Based on', 'Here are', 'Recommendations:'))
+        ]
+        
+        return recommendations[:3]  # Limit to top 3 recommendations
+        
+    except Exception as e:
+        logger.error(f"Failed to get LLM recommendations: {str(e)}")
+        return []
+
+def _send_anomaly_notification(campaign: Campaign, analysis_result: AnalysisResult):
+    """Send notification about the anomaly via RabbitMQ"""
+    try:
+        # Connect to RabbitMQ
+        connection = aio_pika.connect_robust(
+            "amqp://guest:guest@rabbitmq:5672/"
+        )
+        
+        # Prepare notification message
+        notification = {
+            "to_email": campaign.owner_email,  # Assuming this field exists in Campaign model
+            "subject": f"Campaign Alert: {analysis_result.severity.upper()} - {campaign.name}",
+            "body": f"""
+            Campaign Alert: {analysis_result.severity.upper()}
+            
+            Campaign: {campaign.name}
+            Platform: {campaign.platform}
+            Issue Type: {analysis_result.analysis_type}
+            Metric Affected: {analysis_result.metric_affected}
+            
+            Description:
+            {analysis_result.description}
+            
+            Recommendations:
+            {chr(10).join(f'- {rec}' for rec in analysis_result.recommendations)}
+            
+            Please review and take appropriate action.
+            """
+        }
+        
+        # Send message to RabbitMQ
+        channel = connection.channel()
+        queue = channel.declare_queue("notifications")
+        channel.basic_publish(
+            aio_pika.Message(body=json.dumps(notification).encode()),
+            routing_key="notifications"
+        )
+        
+        logger.info(f"Sent notification for analysis result: {analysis_result.id}")
+        
+    except Exception as e:
+        logger.error(f"Failed to send notification: {str(e)}")
