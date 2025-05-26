@@ -13,7 +13,14 @@ const columnHelper = createColumnHelper<AnalysisResult>();
 const columns: ColumnDef<AnalysisResult, any>[] = [
   columnHelper.accessor('dateDetected', {
     header: 'Date Detected',
-    cell: (info) => new Date(info.getValue()).toLocaleDateString(),
+    cell: (info) => {
+      const date = new Date(info.getValue());
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    },
   }),
   columnHelper.accessor('campaign', {
     header: 'Campaign',
@@ -80,7 +87,14 @@ const columns: ColumnDef<AnalysisResult, any>[] = [
 export default function DashboardPage() {
   const [filters, setFilters] = useState<FilterOptions>({});
   const [sort, setSort] = useState<SortOptions>({ field: 'dateDetected', direction: 'desc' });
-  const { data: analytics, isLoading, isError } = useGetAnalyticsQuery();
+  const { data: analytics, isLoading, isError } = useGetAnalyticsQuery(
+    {
+      severity: filters.severity,
+      analysisType: filters.analysisType,
+      metricAffected: filters.metricAffected,
+      dateRange: filters.dateRange,
+    }
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
