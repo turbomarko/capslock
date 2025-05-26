@@ -4,6 +4,24 @@ volumes:
   capslock_local_redis_data: {}
 
 services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    image: capslock_local_frontend
+    container_name: capslock_local_frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    networks:
+      - capslock_network
+
   analytics: &analytics
     build:
       context: ./analytics
