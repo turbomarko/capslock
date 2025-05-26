@@ -11,6 +11,8 @@ services:
       target: development
     image: capslock_local_frontend
     container_name: capslock_local_frontend
+    depends_on:
+      - analytics
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -41,6 +43,8 @@ services:
     ports:
       - '8000:8000'
     command: /start
+    networks:
+      - capslock_network
 
   postgres:
     build:
@@ -55,18 +59,24 @@ services:
       - ./analytics/.envs/.local/.postgres
     ports:
       - '5432:5432'
+    networks:
+      - capslock_network
 
   mailpit:
     image: docker.io/axllent/mailpit:latest
     container_name: capslock_local_mailpit
     ports:
       - '8025:8025'
+    networks:
+      - capslock_network
 
   redis:
     image: docker.io/redis:6
     container_name: capslock_local_redis
     volumes:
       - capslock_local_redis_data:/data
+    networks:
+      - capslock_network
 
   celeryworker:
     <<: *analytics
@@ -79,6 +89,8 @@ services:
       - rabbitmq
     ports: []
     command: /start-celeryworker
+    networks:
+      - capslock_network
 
   celerybeat:
     <<: *analytics
@@ -90,6 +102,8 @@ services:
       - mailpit
     ports: []
     command: /start-celerybeat
+    networks:
+      - capslock_network
 
   flower:
     <<: *analytics
@@ -98,6 +112,8 @@ services:
     ports:
       - '5555:5555'
     command: /start-flower
+    networks:
+      - capslock_network
 
   notifications:
     build:

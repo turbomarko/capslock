@@ -6,59 +6,66 @@ import { FilterBar } from '@/components/FilterBar';
 import { AnalysisResult, FilterOptions, SortOptions } from '@/types/analysis';
 import { createColumnHelper, ColumnDef } from '@tanstack/react-table';
 
-// Mock data - replace with actual API call
-const mockData: AnalysisResult[] = [
-  {
-    id: '1',
-    timestamp: '2024-03-20T10:00:00Z',
-    keyCombination: 'Ctrl+C',
-    frequency: 150,
-    context: 'Text editing',
-    recommendation: 'Consider using Ctrl+Shift+C for more precise copying',
-    significance: 'high',
-    category: 'Editing',
-  },
-  // Add more mock data as needed
-];
+import { useGetAnalyticsQuery } from '@/redux/analytics';
 
 const columnHelper = createColumnHelper<AnalysisResult>();
 
 const columns: ColumnDef<AnalysisResult, any>[] = [
-  columnHelper.accessor('timestamp', {
-    header: 'Time',
-    cell: (info) => new Date(info.getValue()).toLocaleString(),
+  columnHelper.accessor('dateDetected', {
+    header: 'Date Detected',
+    cell: (info) => new Date(info.getValue()).toLocaleDateString(),
   }),
-  columnHelper.accessor('keyCombination', {
-    header: 'Key Combination',
+  columnHelper.accessor('campaign', {
+    header: 'Campaign',
+    cell: (info) => info.getValue(),
+  }),
+  columnHelper.accessor('analysisType', {
+    header: 'Analysis Type',
     cell: (info) => (
       <span className="font-mono bg-gray-100 px-2 py-1 rounded">
         {info.getValue()}
       </span>
     ),
   }),
-  columnHelper.accessor('frequency', {
-    header: 'Frequency',
+  columnHelper.accessor('metricAffected', {
+    header: 'Metric Affected',
     cell: (info) => info.getValue(),
   }),
-  columnHelper.accessor('context', {
-    header: 'Context',
-    cell: (info) => info.getValue(),
-  }),
-  columnHelper.accessor('recommendation', {
-    header: 'Recommendation',
+  columnHelper.accessor('description', {
+    header: 'Description',
     cell: (info) => (
       <div className="max-w-md">
         <p className="text-sm text-gray-600">{info.getValue()}</p>
       </div>
     ),
   }),
-  columnHelper.accessor('significance', {
-    header: 'Significance',
+  columnHelper.accessor('recommendations', {
+    header: 'Recommendations',
+    cell: (info) => {
+      const recommendations = typeof info.getValue() === 'string' 
+        ? JSON.parse(info.getValue()) 
+        : info.getValue();
+      
+      return (
+        <div className="max-w-md">
+          <ul className="list-disc list-inside text-sm text-gray-600">
+            {recommendations.map((rec: string, index: number) => (
+              <li key={index}>{rec}</li>
+            ))}
+          </ul>
+        </div>
+      );
+    },
+  }),
+  columnHelper.accessor('severity', {
+    header: 'Severity',
     cell: (info) => (
       <span
         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          info.getValue() === 'high'
+          info.getValue() === 'critical'
             ? 'bg-red-100 text-red-800'
+            : info.getValue() === 'high'
+            ? 'bg-orange-100 text-orange-800'
             : info.getValue() === 'medium'
             ? 'bg-yellow-100 text-yellow-800'
             : 'bg-green-100 text-green-800'
@@ -68,30 +75,12 @@ const columns: ColumnDef<AnalysisResult, any>[] = [
       </span>
     ),
   }),
-  columnHelper.accessor('category', {
-    header: 'Category',
-    cell: (info) => info.getValue(),
-  }),
 ];
 
 export default function DashboardPage() {
   const [filters, setFilters] = useState<FilterOptions>({});
-  const [sort, setSort] = useState<SortOptions>({ field: 'timestamp', direction: 'desc' });
-
-  // Filter and sort the data
-  const filteredData = mockData.filter((item) => {
-    if (filters.significance && item.significance !== filters.significance) return false;
-    if (filters.category && item.category !== filters.category) return false;
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      return (
-        item.keyCombination.toLowerCase().includes(searchLower) ||
-        item.context.toLowerCase().includes(searchLower) ||
-        item.recommendation.toLowerCase().includes(searchLower)
-      );
-    }
-    return true;
-  });
+  const [sort, setSort] = useState<SortOptions>({ field: 'dateDetected', direction: 'desc' });
+  const { data: analytics, isLoading, isError } = useGetAnalyticsQuery();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -100,7 +89,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-lg shadow">
             <div className="px-4 py-5 sm:p-6">
               <h1 className="text-2xl font-semibold text-gray-900 mb-6">
-                Keyboard Analysis Dashboard
+                Campaign Analysis Dashboard
               </h1>
               
               <FilterBar
@@ -110,7 +99,7 @@ export default function DashboardPage() {
 
               <div className="mt-6">
                 <DataTable
-                  data={filteredData}
+                  data={analytics || []}
                   columns={columns}
                   onSort={(field, direction) =>
                     setSort({ field: field as keyof AnalysisResult, direction })

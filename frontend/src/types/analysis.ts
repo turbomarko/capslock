@@ -1,22 +1,26 @@
 export interface AnalysisResult {
-  id: string;
-  timestamp: string;
-  keyCombination: string;
-  frequency: number;
-  context: string;
-  recommendation: string;
-  significance: 'high' | 'medium' | 'low';
-  category: string;
+  id: number;
+  analysisType: string;
+  campaign: {
+    id: number;
+    name: string;
+  };
+  dateDetected: string;
+  severity: 'high' | 'medium' | 'low' | 'critical';
+  metricAffected: string;
+  description: string;
+  recommendations: string[];
+  createdAt: string;
 }
 
 export interface FilterOptions {
-  significance?: 'high' | 'medium' | 'low';
-  category?: string;
+  severity?: string;
+  analysisType?: string;
+  metricAffected?: string;
   dateRange?: {
     start: string;
     end: string;
   };
-  search?: string;
 }
 
 export interface SortOptions {
