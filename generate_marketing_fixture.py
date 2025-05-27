@@ -385,8 +385,7 @@ def main():
     print(f"# - Analysis results", file=sys.stderr)
     print(f"#", file=sys.stderr)
     print(f"# Usage:", file=sys.stderr)
-    print(f"#   python generate_marketing_fixture.py > fixtures/marketing_data.json", file=sys.stderr)
-    print(f"#   python manage.py loaddata marketing_data.json", file=sys.stderr)
+    print(f"#   python generate_marketing_fixture.py > analytics/analytics/fixtures/marketing_data.json", file=sys.stderr)
 
 if __name__ == "__main__":
     main()
