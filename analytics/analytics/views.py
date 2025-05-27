@@ -1,6 +1,4 @@
-from rest_framework.generics import ListAPIView
-from django.db.models import Q
-from datetime import datetime
+from rest_framework.generics import ListAPIView, RetrieveAPIView
 
 from .models import AnalysisResult
 from .serializers import AnalysisResultSerializer
@@ -34,3 +32,10 @@ class AnalysisResultListView(ListAPIView):
             queryset = queryset.filter(date_detected__lte=date_end)
             
         return queryset.order_by('-date_detected')
+
+
+class AnalysisResultDetailView(RetrieveAPIView):
+    """Returns a single analysis result by ID"""
+    serializer_class = AnalysisResultSerializer
+    queryset = AnalysisResult.objects.all()
+    lookup_field = 'id'

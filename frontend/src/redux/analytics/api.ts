@@ -29,10 +29,16 @@ const api = baseApi.injectEndpoints({
         };
       },
     }),
+    getAnalyticsById: builder.query<AnalysisResult, number>({
+      query: (id) => ({
+        url: `/analytics/${id}/`,
+      }),
+    }),
   }),
   overrideExisting: false,
 });
 
 export const {
   useGetAnalyticsQuery,
+  useGetAnalyticsByIdQuery,
 } = api;

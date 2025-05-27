@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { DataTable } from '@/components/DataTable';
 import { FilterBar } from '@/components/FilterBar';
 import { AnalysisResult, FilterOptions, SortOptions } from '@/types/analysis';
@@ -85,6 +86,7 @@ const columns: ColumnDef<AnalysisResult, any>[] = [
 ];
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [filters, setFilters] = useState<FilterOptions>({});
   const [sort, setSort] = useState<SortOptions>({ field: 'dateDetected', direction: 'desc' });
   const { data: analytics, isLoading, isError } = useGetAnalyticsQuery(
@@ -95,6 +97,10 @@ export default function DashboardPage() {
       dateRange: filters.dateRange,
     }
   );
+
+  const handleRowClick = (row: AnalysisResult) => {
+    router.push(`/dashboard/${row.id}`);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -118,6 +124,7 @@ export default function DashboardPage() {
                   onSort={(field, direction) =>
                     setSort({ field: field as keyof AnalysisResult, direction })
                   }
+                  onRowClick={handleRowClick}
                 />
               </div>
             </div>

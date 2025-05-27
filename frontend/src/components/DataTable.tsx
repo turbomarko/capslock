@@ -5,7 +5,6 @@ import {
   getFilteredRowModel,
   flexRender,
   ColumnDef,
-  Column,
 } from '@tanstack/react-table';
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
@@ -14,9 +13,10 @@ interface DataTableProps<T> {
   columns: ColumnDef<T, any>[];
   onSort?: (field: string, direction: 'asc' | 'desc') => void;
   onFilter?: (filters: Record<string, any>) => void;
+  onRowClick?: (row: T) => void;
 }
 
-export function DataTable<T>({ data, columns, onSort, onFilter }: DataTableProps<T>) {
+export function DataTable<T>({ data, columns, onSort, onFilter, onRowClick }: DataTableProps<T>) {
   const table = useReactTable({
     data,
     columns,
@@ -56,7 +56,11 @@ export function DataTable<T>({ data, columns, onSort, onFilter }: DataTableProps
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="hover:bg-gray-50">
+            <tr 
+              key={row.id} 
+              className={`hover:bg-gray-50 ${onRowClick ? 'cursor-pointer' : ''}`}
+              onClick={() => onRowClick?.(row.original)}
+            >
               {row.getVisibleCells().map((cell) => (
                 <td
                   key={cell.id}
@@ -71,4 +75,4 @@ export function DataTable<T>({ data, columns, onSort, onFilter }: DataTableProps
       </table>
     </div>
   );
-} 
+}
