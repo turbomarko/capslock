@@ -72,7 +72,7 @@ export default function AnalysisDetailPage() {
                 <div>
                   <h2 className="text-lg font-medium text-gray-900">Analysis Type</h2>
                   <p className="mt-1">
-                    <span className="font-mono bg-gray-100 px-2 py-1 rounded">
+                    <span className="font-mono bg-gray-100 px-2 py-1 rounded text-gray-900">
                       {analysis.analysisType}
                     </span>
                   </p>

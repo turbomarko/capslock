@@ -102,6 +102,25 @@ export default function DashboardPage() {
     router.push(`/dashboard/${row.id}`);
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-4">Error loading analytics</h1>
+          <p className="text-gray-600 mb-4">Please try refreshing the page</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -133,4 +152,4 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-} 
+}

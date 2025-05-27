@@ -1,6 +1,3 @@
-import { Fragment } from 'react';
-import { Menu, Transition, MenuButton, MenuItems } from '@headlessui/react';
-import { FunnelIcon } from '@heroicons/react/24/outline';
 import { FilterOptions } from '@/types/analysis';
 
 interface FilterBarProps {
@@ -19,7 +16,7 @@ export function FilterBar({ currentFilters, onFilterChange }: FilterBarProps) {
   return (
     <div className="flex flex-wrap gap-4 items-center">
       <select
-        className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+        className="rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-3 font-medium"
         value={currentFilters.severity || ''}
         onChange={(e) => handleFilterChange('severity', e.target.value || undefined)}
       >
@@ -31,7 +28,7 @@ export function FilterBar({ currentFilters, onFilterChange }: FilterBarProps) {
       </select>
 
       <select
-        className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+        className="rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-3 font-medium"
         value={currentFilters.analysisType || ''}
         onChange={(e) => handleFilterChange('analysisType', e.target.value || undefined)}
       >
@@ -42,7 +39,7 @@ export function FilterBar({ currentFilters, onFilterChange }: FilterBarProps) {
       </select>
 
       <select
-        className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+        className="rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-3 font-medium"
         value={currentFilters.metricAffected || ''}
         onChange={(e) => handleFilterChange('metricAffected', e.target.value || undefined)}
       >
@@ -56,7 +53,7 @@ export function FilterBar({ currentFilters, onFilterChange }: FilterBarProps) {
       <div className="flex gap-2 items-center">
         <input
           type="date"
-          className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          className="rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-3 font-medium"
           value={currentFilters.dateRange?.start || ''}
           onChange={(e) =>
             handleFilterChange('dateRange', {
@@ -68,7 +65,7 @@ export function FilterBar({ currentFilters, onFilterChange }: FilterBarProps) {
         <span>to</span>
         <input
           type="date"
-          className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          className="rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-3 font-medium"
           value={currentFilters.dateRange?.end || ''}
           onChange={(e) =>
             handleFilterChange('dateRange', {
@@ -80,4 +77,4 @@ export function FilterBar({ currentFilters, onFilterChange }: FilterBarProps) {
       </div>
     </div>
   );
-} 
+}
