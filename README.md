@@ -8,6 +8,7 @@ Since I was focusing more on the architecture and patterns, I did not have time 
 - I did not implement any tests
 - Only the development environment is built, no production setup
 - There might still be some burnt it constants (urls, usernames) in the code, I did not have the time to move everything to env files
+- Optimization (caching, database indexes etc.)
 
 ## Architecture Notes
 
