@@ -48,10 +48,10 @@ def analyze_campaign_performance(self, campaign_id=None, days_back=7):
                 continue  # Need at least 3 days of data
             
             # Perform anomaly detection
-            ctr_anomaly = _detect_ctr_anomaly(recent_metrics, campaign)
-            cpc_anomaly = _detect_cpc_anomaly(recent_metrics, campaign)
+            ctr_anomaly = _detect_ctr_anomaly(recent_metrics)
+            cpc_anomaly = _detect_cpc_anomaly(recent_metrics)
             spend_anomaly = _detect_spend_anomaly(recent_metrics, campaign)
-            conversion_anomaly = _detect_conversion_anomaly(recent_metrics, campaign)
+            conversion_anomaly = _detect_conversion_anomaly(recent_metrics)
             
             # Check performance thresholds
             performance_alert = _check_performance_thresholds(recent_metrics, campaign)
@@ -84,7 +84,7 @@ def analyze_campaign_performance(self, campaign_id=None, days_back=7):
         raise self.retry(exc=exc, countdown=60)
 
 
-def _detect_ctr_anomaly(metrics, campaign):
+def _detect_ctr_anomaly(metrics):
     """Detect CTR anomalies using statistical analysis"""
     ctr_values = [float(m.ctr) for m in metrics if m.ctr > 0]
     if len(ctr_values) < 3:
@@ -101,17 +101,18 @@ def _detect_ctr_anomaly(metrics, campaign):
             'severity': 'high' if drop_percent > 60 else 'medium',
             'metric': 'ctr',
             'description': f"CTR dropped by {drop_percent:.1f}% - possible ad fatigue or audience saturation",
-            'recommendations': [
-                "Refresh ad creative immediately",
-                "Test new audience segments", 
-                "Review ad frequency and reduce if necessary"
-            ]
+            'metric_data': {
+                'recent_value': recent_ctr,
+                'baseline_value': baseline_ctr,
+                'drop_percentage': drop_percent,
+                'historical_values': ctr_values
+            }
         }
     
     return None
 
 
-def _detect_cpc_anomaly(metrics, campaign):
+def _detect_cpc_anomaly(metrics):
     """Detect CPC spikes that indicate increased competition or bidding issues"""
     cpc_values = [float(m.cpc) for m in metrics if m.cpc > 0]
     if len(cpc_values) < 3:
@@ -128,12 +129,12 @@ def _detect_cpc_anomaly(metrics, campaign):
             'severity': 'critical' if increase_percent > 100 else 'medium',
             'metric': 'cpc',
             'description': f"CPC increased by {increase_percent:.1f}% - competition surge or bidding issues",
-            'recommendations': [
-                "Review bidding strategy and adjust maximum bids",
-                "Analyze competitor activity",
-                "Consider expanding keyword targeting",
-                "Implement dayparting to avoid peak competition hours"
-            ]
+            'metric_data': {
+                'recent_value': recent_cpc,
+                'baseline_value': baseline_cpc,
+                'increase_percentage': increase_percent,
+                'historical_values': cpc_values
+            }
         }
     
     return None
@@ -156,18 +157,19 @@ def _detect_spend_anomaly(metrics, campaign):
             'severity': 'high',
             'metric': 'spend',
             'description': f"Daily spend of ${recent_spend:.2f} is unusually high (baseline: ${baseline_spend:.2f})",
-            'recommendations': [
-                "Check for budget auto-increase settings",
-                "Review bidding strategy for overspending",
-                "Implement daily budget caps",
-                "Monitor campaign throughout the day"
-            ]
+            'metric_data': {
+                'recent_value': recent_spend,
+                'baseline_value': baseline_spend,
+                'daily_budget': daily_budget,
+                'budget_utilization': (recent_spend / daily_budget) * 100,
+                'historical_values': spend_values
+            }
         }
     
     return None
 
 
-def _detect_conversion_anomaly(metrics, campaign):
+def _detect_conversion_anomaly(metrics):
     """Detect conversion rate drops that might indicate landing page or tracking issues"""
     conversion_rates = []
     for m in metrics:
@@ -189,13 +191,14 @@ def _detect_conversion_anomaly(metrics, campaign):
             'severity': 'critical',
             'metric': 'conversion_rate',
             'description': f"Conversion rate dropped by {drop_percent:.1f}% - landing page or tracking issues suspected",
-            'recommendations': [
-                "Check landing page functionality and load speed",
-                "Verify conversion tracking setup",
-                "Review form completion rates",
-                "Test checkout/signup process",
-                "Consider pausing campaign until resolved"
-            ]
+            'metric_data': {
+                'recent_value': recent_conv_rate,
+                'baseline_value': baseline_conv_rate,
+                'drop_percentage': drop_percent,
+                'historical_values': conversion_rates,
+                'clicks': metrics[0].clicks,
+                'conversions': metrics[0].conversions
+            }
         }
     
     return None
@@ -220,6 +223,15 @@ def _check_performance_thresholds(metrics, campaign):
     platform_thresholds = thresholds.get(campaign.platform, thresholds['Facebook'])
     
     issues = []
+    metric_data = {
+        'platform': campaign.platform,
+        'thresholds': platform_thresholds,
+        'current_values': {
+            'ctr': latest_metric.ctr,
+            'cpa': latest_metric.cpa,
+            'roas': latest_metric.roas
+        }
+    }
     
     if latest_metric.ctr < platform_thresholds['min_ctr']:
         issues.append(f"CTR ({latest_metric.ctr}%) below threshold ({platform_thresholds['min_ctr']}%)")
@@ -236,12 +248,7 @@ def _check_performance_thresholds(metrics, campaign):
             'severity': 'medium',
             'metric': 'multiple',
             'description': f"Performance below thresholds: {'; '.join(issues)}",
-            'recommendations': [
-                "Review and optimize targeting parameters",
-                "A/B test ad creative and copy",
-                "Analyze top-performing audience segments",
-                "Consider adjusting bidding strategy"
-            ]
+            'metric_data': metric_data
         }
     
     return None
@@ -251,11 +258,8 @@ def _check_performance_thresholds(metrics, campaign):
 def _create_analysis_result(campaign, anomaly_data, analysis_date):
     """Create and save analysis result to database with LLM recommendations and notifications"""
     try:
-        # Get LLM recommendations
+        # Get LLM recommendations based on the detailed metric data
         llm_recommendations = _get_llm_recommendations(campaign, anomaly_data)
-        
-        # Combine original recommendations with LLM recommendations
-        all_recommendations = anomaly_data['recommendations'] + llm_recommendations
         
         analysis_result = AnalysisResult.objects.create(
             analysis_type=anomaly_data['type'],
@@ -264,7 +268,8 @@ def _create_analysis_result(campaign, anomaly_data, analysis_date):
             severity=anomaly_data['severity'],
             metric_affected=anomaly_data['metric'],
             description=anomaly_data['description'],
-            recommendations=all_recommendations
+            recommendations=llm_recommendations,
+            metric_data=anomaly_data.get('metric_data', {})  # Store the detailed metric data
         )
         
         # Send notification
@@ -278,9 +283,9 @@ def _create_analysis_result(campaign, anomaly_data, analysis_date):
         return None
 
 def _get_llm_recommendations(campaign: Campaign, anomaly_data: Dict[str, Any]) -> List[str]:
-    """Get additional recommendations from LLM service"""
+    """Get recommendations from LLM service based on detailed metric data"""
     try:
-        # Prepare the prompt for the LLM
+        # Prepare the prompt for the LLM with detailed metric data
         prompt = f"""
         Campaign: {campaign.name}
         Platform: {campaign.platform}
@@ -289,9 +294,12 @@ def _get_llm_recommendations(campaign: Campaign, anomaly_data: Dict[str, Any]) -
         Metric Affected: {anomaly_data['metric']}
         Description: {anomaly_data['description']}
         
-        Based on this campaign anomaly, provide 2-3 specific, actionable recommendations 
-        for improving campaign performance. Focus on practical steps that can be taken 
-        immediately. Format each recommendation as a separate item.
+        Metric Data:
+        {json.dumps(anomaly_data.get('metric_data', {}), indent=2)}
+        
+        Based on this campaign anomaly and the detailed metric data provided, provide 3-4 specific, 
+        actionable recommendations for improving campaign performance. Focus on practical steps 
+        that can be taken immediately. Format each recommendation as a separate item.
         """
         
         # Call LLM service
@@ -299,7 +307,7 @@ def _get_llm_recommendations(campaign: Campaign, anomaly_data: Dict[str, Any]) -
             "http://llm:8000/chat",
             json={
                 "messages": [
-                    {"role": "system", "content": "You are a digital marketing expert providing campaign optimization advice."},
+                    {"role": "system", "content": "You are a digital marketing expert providing campaign optimization advice based on detailed metric analysis."},
                     {"role": "user", "content": prompt}
                 ],
                 "temperature": 0.7
@@ -314,7 +322,7 @@ def _get_llm_recommendations(campaign: Campaign, anomaly_data: Dict[str, Any]) -
             if rec.strip() and not rec.strip().startswith(('Based on', 'Here are', 'Recommendations:'))
         ]
         
-        return recommendations[:3]  # Limit to top 3 recommendations
+        return recommendations[:4]  # Limit to top 4 recommendations
         
     except Exception as e:
         logger.error(f"Failed to get LLM recommendations: {str(e)}")
