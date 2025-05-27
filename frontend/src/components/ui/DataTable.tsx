@@ -16,7 +16,7 @@ interface DataTableProps<T> {
   onRowClick?: (row: T) => void;
 }
 
-export function DataTable<T>({ data, columns, onSort, onFilter, onRowClick }: DataTableProps<T>) {
+export function DataTable<T>({ data, columns, onRowClick }: DataTableProps<T>) {
   const table = useReactTable({
     data,
     columns,
