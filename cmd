@@ -85,6 +85,10 @@ load_data() {
   docker compose -f docker-compose."$c1".yml run --rm analytics python manage.py loaddata marketing_data.json
 }
 
+setup() {
+  build && migrate && load_data && up
+}
+
 
 # Code check commands
 ruff() {
