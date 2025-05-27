@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createColumnHelper, ColumnDef } from '@tanstack/react-table';
 
-import { AnalysisResult, FilterOptions, SortOptions } from '@/types/analysis';
+import { AnalysisResult, FilterOptions } from '@/types/analysis';
 import { DataTable, LoadingSpinner } from '@/components/ui';
 import { FilterBar } from './FilterBar';
 
@@ -40,32 +40,6 @@ const columns: ColumnDef<AnalysisResult, any>[] = [
     header: 'Metric Affected',
     cell: (info) => info.getValue(),
   }),
-  columnHelper.accessor('description', {
-    header: 'Description',
-    cell: (info) => (
-      <div className="max-w-md">
-        <p className="text-sm text-gray-600">{info.getValue()}</p>
-      </div>
-    ),
-  }),
-  columnHelper.accessor('recommendations', {
-    header: 'Recommendations',
-    cell: (info) => {
-      const recommendations = typeof info.getValue() === 'string' 
-        ? JSON.parse(info.getValue()) 
-        : info.getValue();
-      
-      return (
-        <div className="max-w-md">
-          <ul className="list-disc list-inside text-sm text-gray-600">
-            {recommendations.map((rec: string, index: number) => (
-              <li key={index}>{rec}</li>
-            ))}
-          </ul>
-        </div>
-      );
-    },
-  }),
   columnHelper.accessor('severity', {
     header: 'Severity',
     cell: (info) => (
@@ -89,7 +63,6 @@ const columns: ColumnDef<AnalysisResult, any>[] = [
 export default function DashboardContent() {
   const router = useRouter();
   const [filters, setFilters] = useState<FilterOptions>({});
-  const [sort, setSort] = useState<SortOptions>({ field: 'dateDetected', direction: 'desc' });
   const { data: analytics, isLoading, isError } = useGetAnalyticsQuery(
     {
       severity: filters.severity,

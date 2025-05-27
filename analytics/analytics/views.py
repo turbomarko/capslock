@@ -1,13 +1,13 @@
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 
 from .models import AnalysisResult
-from .serializers import AnalysisResultSerializer
+from .serializers import AnalysisResultSerializer, AnalysisResultListSerializer
 
 
 class AnalysisResultListView(ListAPIView):
     """Returns the list of analysis results with filtering capabilities"""
 
-    serializer_class = AnalysisResultSerializer
+    serializer_class = AnalysisResultListSerializer
 
     def get_queryset(self):
         queryset = AnalysisResult.objects.all()

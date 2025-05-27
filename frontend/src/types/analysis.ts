@@ -22,8 +22,3 @@ export interface FilterOptions {
     end: string;
   };
 }
-
-export interface SortOptions {
-  field: keyof AnalysisResult;
-  direction: 'asc' | 'desc';
-}

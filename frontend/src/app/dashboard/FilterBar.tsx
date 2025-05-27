@@ -67,7 +67,7 @@ export function FilterBar({ currentFilters, onFilterChange }: FilterBarProps) {
             })
           }
         />
-        <span>to</span>
+        <span className="text-gray-600">to</span>
         <DatePicker
           value={currentFilters.dateRange?.end || ''}
           onChange={(value) =>
