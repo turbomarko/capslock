@@ -2,11 +2,12 @@
 
 This project consists of multiple services that are designed to be deployed as separate repositories. The current setup focuses on the development environment configuration (I use different config, Dockerfiles, requirements in production).
 
-Since I did not have time to complete everything I wanted to, I'll list here the missing pieces:
+Since I was focusing more on the architecture and patterns, I did not have time to complete everything I wanted to, I'll list here the missing pieces:
 - The mailing service hasn't been tested
 - I did not include authentication / authorization
 - I did not implement any tests
 - Only the development environment is built, no production setup
+- There might still be some burnt it constants (urls, usernames) in the code, I did not have the time to move everything to env files
 
 ## Architecture Notes
 

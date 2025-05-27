@@ -1,5 +1,6 @@
 from config import celery_app
 from datetime import datetime, timedelta
+from django.conf import settings
 from django.db import transaction
 from analytics.models import Campaign, DailyMetric, AnalysisResult
 import statistics
@@ -347,6 +348,7 @@ def _send_anomaly_notification(campaign: Campaign, analysis_result: AnalysisResu
             Platform: {campaign.platform}
             Issue Type: {analysis_result.analysis_type}
             Metric Affected: {analysis_result.metric_affected}
+            Link: {settings.FRONTEND_URL}dashboard/{campaign.id}
             
             Description:
             {analysis_result.description}
@@ -360,7 +362,6 @@ def _send_anomaly_notification(campaign: Campaign, analysis_result: AnalysisResu
         
         # Send message to RabbitMQ
         channel = connection.channel()
-        queue = channel.declare_queue("notifications")
         channel.basic_publish(
             aio_pika.Message(body=json.dumps(notification).encode()),
             routing_key="notifications"
