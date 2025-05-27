@@ -1,31 +1,11 @@
 import logging
-from typing import List, Optional
-
 import httpx
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from fastapi import HTTPException
 
-from .services.settings import Settings
-from .services.models import ChatRequest, ChatResponse
-from .services.llm import LLMService
+from .settings import Settings
+from .models import ChatRequest, ChatResponse
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-class Message(BaseModel):
-    role: str = Field(..., description="The role of the message sender (system, user, or assistant)")
-    content: str = Field(..., description="The content of the message")
-
-class ChatRequest(BaseModel):
-    messages: List[Message] = Field(..., description="List of messages in the conversation")
-    temperature: Optional[float] = Field(0.7, description="Sampling temperature between 0 and 2")
-    max_tokens: Optional[int] = Field(None, description="Maximum number of tokens to generate")
-    stream: Optional[bool] = Field(False, description="Whether to stream the response")
-
-class ChatResponse(BaseModel):
-    response: str = Field(..., description="The generated response")
-    model: str = Field(..., description="The model used for generation")
 
 class LLMService:
     def __init__(self, settings: Settings):
@@ -77,23 +57,3 @@ class LLMService:
     async def close(self):
         """Close the HTTP client."""
         await self.client.aclose()
-
-# Initialize FastAPI app and services
-app = FastAPI(title="LLM Service")
-settings = Settings()
-llm_service = LLMService(settings)
-
-@app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
-    """Generate a chat completion using OpenRouter."""
-    return await llm_service.generate_response(request)
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy"}
-
-@app.on_event("shutdown")
-async def shutdown():
-    """Cleanup on shutdown."""
-    await llm_service.close()
