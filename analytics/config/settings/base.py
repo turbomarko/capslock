@@ -234,6 +234,7 @@ SPECTACULAR_SETTINGS = {
 # Custom config
 # ------------------------------------------------------------------------------
 FRONTEND_URL = "http://localhost:3000/"
+DEFAULT_NOTIFICATION_EMAIL = env("DEFAULT_NOTIFICATION_EMAIL", default="alerts@example.com")
 
 # STATIC
 # ------------------------------------------------------------------------------

@@ -269,8 +269,7 @@ def _create_analysis_result(campaign, anomaly_data, analysis_date):
             severity=anomaly_data['severity'],
             metric_affected=anomaly_data['metric'],
             description=anomaly_data['description'],
-            recommendations=llm_recommendations,
-            metric_data=anomaly_data.get('metric_data', {})  # Store the detailed metric data
+            recommendations=llm_recommendations
         )
         
         # Send notification
@@ -311,8 +310,10 @@ def _get_llm_recommendations(campaign: Campaign, anomaly_data: Dict[str, Any]) -
                     {"role": "system", "content": "You are a digital marketing expert providing campaign optimization advice based on detailed metric analysis."},
                     {"role": "user", "content": prompt}
                 ],
-                "temperature": 0.7
-            }
+                "temperature": 0.7,
+                "max_tokens": 100
+            },
+            timeout=10.0
         )
         response.raise_for_status()
         
@@ -332,14 +333,9 @@ def _get_llm_recommendations(campaign: Campaign, anomaly_data: Dict[str, Any]) -
 def _send_anomaly_notification(campaign: Campaign, analysis_result: AnalysisResult):
     """Send notification about the anomaly via RabbitMQ"""
     try:
-        # Connect to RabbitMQ
-        connection = aio_pika.connect_robust(
-            "amqp://guest:guest@rabbitmq:5672/"
-        )
-        
         # Prepare notification message
         notification = {
-            "to_email": campaign.owner_email,  # Assuming this field exists in Campaign model
+            "to_email": settings.DEFAULT_NOTIFICATION_EMAIL,
             "subject": f"Campaign Alert: {analysis_result.severity.upper()} - {campaign.name}",
             "body": f"""
             Campaign Alert: {analysis_result.severity.upper()}
@@ -360,12 +356,26 @@ def _send_anomaly_notification(campaign: Campaign, analysis_result: AnalysisResu
             """
         }
         
-        # Send message to RabbitMQ
+        # Send message to RabbitMQ using synchronous client
+        import pika
+        
+        # Connect to RabbitMQ
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                host='rabbitmq',
+                port=5672,
+                credentials=pika.PlainCredentials('guest', 'guest')
+            )
+        )
+        
         channel = connection.channel()
         channel.basic_publish(
-            aio_pika.Message(body=json.dumps(notification).encode()),
-            routing_key="notifications"
+            exchange='',
+            routing_key='notifications',
+            body=json.dumps(notification).encode()
         )
+        
+        connection.close()
         
         logger.info(f"Sent notification for analysis result: {analysis_result.id}")
         

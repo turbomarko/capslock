@@ -27,6 +27,6 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'analyze-campaign-performance': {
         'task': 'analytics.tasks.analyze_campaign_performance',
-        'schedule': crontab(hour=6, minute=20),
+        'schedule': crontab(minute=3),
     },
 }
